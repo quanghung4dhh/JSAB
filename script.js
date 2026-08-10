@@ -2,100 +2,52 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-//Draw a line
-// ctx.beginPath();
-// ctx.moveTo(120, 60);
-// ctx.lineTo(670, 199);
-// ctx.strokeStyle = "#000";
-// ctx.lineWidth = 3;
-// ctx.stroke();
+//Animation
+// let x = 50;
+// const y = 50;
+// let xSpeed = 3;
 
-//Draw an arc
-//ctx.arc(x, y, radius, startingAngle, endingAngle(rad), counterClockwise)
-// ctx.arc(50, 50, 50, 1.5 * Math.PI, 0.5 * Math.PI, true);
-// ctx.strokeStyle = "red";
-// ctx.lineWidth = 3;
-// ctx.stroke();
+// function animation() {
+//   ctx.clearRect(0, 0, canvas.width, canvas.height);
+//   ctx.fillStyle = "#ef4565";
+//   ctx.fillRect(x, y, 100, 100);
+//   x += xSpeed;
+//   if (x + 100 >= canvas.width || x <= 0) xSpeed = -xSpeed;
 
-//Draw a triangle
-// ctx.beginPath();
-// ctx.moveTo(200, 500);
-// ctx.lineTo(500, 500);
-// ctx.lineTo(350, 300);
-// ctx.strokeStyle = "#000";
-// ctx.lineWidth = 3;
-// ctx.closePath();
-// ctx.stroke();
+//   console.log(xSpeed)
+//   requestAnimationFrame(animation);
+// }
 
-//Draw house
+// animation();
 
-//Draw body
-// ctx.fillStyle = "#3da9fc";
-// ctx.fillRect(260, 250, 200, 200);
+//Ball bouncing
 
-// //Draw roof
-// ctx.beginPath();
-// ctx.moveTo(250, 250);
-// ctx.lineTo(470, 250);
-// ctx.lineTo(360, 150);
-// ctx.closePath();
-// ctx.fillStyle = "#ef4565";
-// ctx.fill();
+let radius = 30;
 
-// //Draw door
-// ctx.fillStyle = "#90b4ce";
-// ctx.fillRect(310, 360, 100, 90);
+let ball1 = { x: 60, y: 60, dx: 3, dy: 4 };
+let ball2 = { x: 90, y: 30, dx: 4, dy: 3 };
 
-// //Draw window
-// ctx.fillStyle = "#094067";
-// ctx.fillRect(400, 300, 50, 50);
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ballBouncing(ball1);
+  ballBouncing(ball2);
+  requestAnimationFrame(gameLoop);
+}
 
-function drawHouse(x, y) {
-  //House size
-  const HOUSE_WIDTH = 200;
-  const HOUSE_HEIGHT = 200;
+gameLoop();
 
-  //Door size
-  const DOOR_WIDTH = 100;
-  const DOOR_HEIGHT = 90;
-
-  //Window size
-  const WINDOW_WIDTH = 50;
-  const WINDOW_HEIGHT = 50;
-
-  //Roof height
-  const ROOF_HEIGHT = 100;
-
-  //Draw body
-  ctx.fillStyle = "#3da9fc";
-  ctx.fillRect(x, y, HOUSE_WIDTH, HOUSE_HEIGHT);
-
-  //Draw roof
+function ballBouncing(ball) {
+  //Draw ball
   ctx.beginPath();
-  ctx.moveTo(x - 10, y);
-  ctx.lineTo(x + HOUSE_WIDTH + 10, y);
-  ctx.lineTo(x + HOUSE_WIDTH / 2, y - ROOF_HEIGHT);
-  ctx.closePath();
+  ctx.arc(ball.x, ball.y, radius, 0, 2 * Math.PI);
   ctx.fillStyle = "#ef4565";
   ctx.fill();
 
-  //Draw door
-  ctx.fillStyle = "#90b4ce";
-  ctx.fillRect(
-    x + (HOUSE_WIDTH - DOOR_WIDTH) / 2,
-    y + HOUSE_HEIGHT - DOOR_HEIGHT,
-    DOOR_WIDTH,
-    DOOR_HEIGHT,
-  );
-
-  //Draw window
-  ctx.fillStyle = "#094067";
-  ctx.fillRect(
-    x - 10 - WINDOW_WIDTH + HOUSE_WIDTH,
-    y + HOUSE_HEIGHT - DOOR_HEIGHT - WINDOW_HEIGHT - 10,
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
-  );
+  //Movement logic
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+  if (ball.x + radius >= canvas.width || ball.x - radius <= 0)
+    ball.dx = -ball.dx;
+  if (ball.y + radius >= canvas.height || ball.y - radius <= 0)
+    ball.dy = -ball.dy;
 }
-
-drawHouse(300, 500);
