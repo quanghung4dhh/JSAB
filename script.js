@@ -1,93 +1,93 @@
-//Get the canvas and context
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+// 1. STATE GAME
 
-//Square param
-const xSpeed = 300; //(pixel/s)
-const ySpeed = 300; //(pixel/s)
-const width = 20;
-const height = 20;
-
-//Movement param
-const position = { x: 10, y: 10 };
-const movement = {
-  arrowUp: false,
-  arrowDown: false,
-  arrowLeft: false,
-  arrowRight: false,
+const gameState = {
+  canvas: null,
+  ctx: null,
+  player: {
+    x: 10,
+    y: 10,
+    size: 20,
+    speed: 300, //(pixel/s)
+  },
+  movement: {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  },
+  KEY: {
+    ArrowUp: "up",
+    w: "up",
+    W: "up",
+    ArrowDown: "down",
+    s: "down",
+    S: "down",
+    ArrowLeft: "left",
+    a: "left",
+    A: "left",
+    ArrowRight: "right",
+    d: "right",
+    D: "right",
+  },
+  lastTime: 0,
 };
 
-function draw(position) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#ef4565";
-  ctx.fillRect(position.x, position.y, width, height);
-}
+// 2. GAME INIT
+function init() {
+  //Khởi tạo canvas và ctx
+  gameState.canvas = document.getElementById("canvas");
+  gameState.ctx = gameState.canvas.getContext("2d");
 
-//Key down then continue moving
-document.addEventListener("keydown", (event) => {
-  switch (event.key) {
-    case "ArrowUp":
-    case "w":
-    case "W":
-      movement.arrowUp = true;
-      break;
-    case "ArrowDown":
-    case "s":
-    case "S":
-      movement.arrowDown = true;
-      break;
-    case "ArrowLeft":
-    case "a":
-    case "A":
-      movement.arrowLeft = true;
-      break;
-    case "ArrowRight":
-    case "d":
-    case "D":
-      movement.arrowRight = true;
-      break;
-  }
-});
+  //Gắn sự kiện ấn phím
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keyup", handleKeyUp);
 
-//Stop when release the key
-document.addEventListener("keyup", (event) => {
-  switch (event.key) {
-    case "ArrowUp":
-    case "w":
-    case "W":
-      movement.arrowUp = false;
-      break;
-    case "ArrowDown":
-    case "s":
-    case "S":
-      movement.arrowDown = false;
-      break;
-    case "ArrowLeft":
-    case "a":
-    case "A":
-      movement.arrowLeft = false;
-      break;
-    case "ArrowRight":
-    case "d":
-    case "D":
-      movement.arrowRight = false;
-      break;
-  }
-});
-
-//Game Loop sử dụng delta time
-let lastTime = performance.now();
-function gameLoop(timeStamp) {
-  const dt = (timeStamp - lastTime) / 1000;
-  lastTime = timeStamp;
-  if (movement.arrowUp) position.y -= ySpeed * dt;
-  if (movement.arrowDown) position.y += ySpeed * dt;
-  if (movement.arrowLeft) position.x -= xSpeed * dt;
-  if (movement.arrowRight) position.x += xSpeed * dt;
-  position.x = Math.max(0, Math.min(canvas.width - width, position.x));
-  position.y = Math.max(0, Math.min(canvas.height - height, position.y));
-  draw(position);
+  //Tạo game loop
+  gameState.lastTime = performance.now();
   requestAnimationFrame(gameLoop);
 }
-draw(position);
-requestAnimationFrame(gameLoop);
+
+// 3. EVENT KEY HANDLER
+function handleKeyDown(event) {
+  const key = gameState.KEY[event.key];
+  if (key) gameState.movement[key] = true;
+}
+
+function handleKeyUp(event) {
+  const key = gameState.KEY[event.key];
+  if (key) gameState.movement[key] = false;
+}
+
+// 4. DRAW FUNCTION
+function draw() {
+  const { ctx, player } = gameState;
+  ctx.clearRect(0, 0, gameState.canvas.width, gameState.canvas.height);
+  ctx.fillStyle = "#ef4565";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+}
+
+// 5. UPDATE FUNCTION
+function update(dt) {
+  const { player, movement, canvas } = gameState;
+
+  //Update vị trí player
+  if (movement.up) player.y -= player.speed * dt;
+  if (movement.down) player.y += player.speed * dt;
+  if (movement.left) player.x -= player.speed * dt;
+  if (movement.right) player.x += player.speed * dt;
+
+  //Giới hạn vị trí player
+  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+}
+
+// 6. GAMELOOP
+function gameLoop(timeStamp) {
+  const dt = (timeStamp - gameState.lastTime) / 1000;
+  gameState.lastTime = timeStamp;
+  update(dt);
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+init();
