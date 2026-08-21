@@ -2,40 +2,88 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let xCenter = 50;
-let yCenter = 50;
-let radius = 10;
-let movement = false;
-const position = {};
+//Square param
+const xSpeed = 5;
+const ySpeed = 5;
+const width = 20;
+const height = 20;
+
+//Movement param
+const position = { x: 10, y: 10 };
+const movement = {
+  arrowUp: false,
+  arrowDown: false,
+  arrowLeft: false,
+  arrowRight: false,
+};
 
 function draw(position) {
-  // ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#ef4565";
-  ctx.beginPath();
-  ctx.arc(position.x, position.y, radius, 0, 2 * Math.PI);
-  ctx.fill();
+  ctx.fillRect(position.x, position.y, width, height);
 }
 
-canvas.addEventListener("mousedown", (event) => {
-  movement = true;
-  position.x = event.offsetX;
-  position.y = event.offsetY;
-  draw(position); // Vẽ ngay điểm đầu tiên
+//Key down then continue moving
+document.addEventListener("keydown", (event) => {
+  switch (event.key) {
+    case "ArrowUp":
+    case "w":
+    case "W":
+      movement.arrowUp = true;
+      break;
+    case "ArrowDown":
+    case "s":
+    case "S":
+      movement.arrowDown = true;
+      break;
+    case "ArrowLeft":
+    case "a":
+    case "A":
+      movement.arrowLeft = true;
+      break;
+    case "ArrowRight":
+    case "d":
+    case "D":
+      movement.arrowRight = true;
+      break;
+  }
 });
 
-canvas.addEventListener("mousemove", (event) => {
-  if (!movement) return;
-
-  position.x = event.offsetX;
-  position.y = event.offsetY;
-});
-
-canvas.addEventListener("mouseup", () => {
-  movement = false;
+//Stop when release the key
+document.addEventListener("keyup", (event) => {
+  switch (event.key) {
+    case "ArrowUp":
+    case "w":
+    case "W":
+      movement.arrowUp = false;
+      break;
+    case "ArrowDown":
+    case "s":
+    case "S":
+      movement.arrowDown = false;
+      break;
+    case "ArrowLeft":
+    case "a":
+    case "A":
+      movement.arrowLeft = false;
+      break;
+    case "ArrowRight":
+    case "d":
+    case "D":
+      movement.arrowRight = false;
+      break;
+  }
 });
 
 function gameLoop() {
-  if (movement) draw(position);
+  if (movement.arrowUp) position.y -= ySpeed;
+  if (movement.arrowDown) position.y += ySpeed;
+  if (movement.arrowLeft) position.x -= xSpeed;
+  if (movement.arrowRight) position.x += xSpeed;
+  position.x = Math.max(0, Math.min(canvas.width - width, position.x));
+  position.y = Math.max(0, Math.min(canvas.height - height, position.y));
+  draw(position);
   requestAnimationFrame(gameLoop);
 }
-gameLoop()
+draw(position);
+gameLoop();
