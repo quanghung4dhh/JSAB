@@ -2,52 +2,40 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-//Animation
-// let x = 50;
-// const y = 50;
-// let xSpeed = 3;
+let xCenter = 50;
+let yCenter = 50;
+let radius = 10;
+let movement = false;
+const position = {};
 
-// function animation() {
-//   ctx.clearRect(0, 0, canvas.width, canvas.height);
-//   ctx.fillStyle = "#ef4565";
-//   ctx.fillRect(x, y, 100, 100);
-//   x += xSpeed;
-//   if (x + 100 >= canvas.width || x <= 0) xSpeed = -xSpeed;
+function draw(position) {
+  // ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ef4565";
+  ctx.beginPath();
+  ctx.arc(position.x, position.y, radius, 0, 2 * Math.PI);
+  ctx.fill();
+}
 
-//   console.log(xSpeed)
-//   requestAnimationFrame(animation);
-// }
+canvas.addEventListener("mousedown", (event) => {
+  movement = true;
+  position.x = event.offsetX;
+  position.y = event.offsetY;
+  draw(position); // Vẽ ngay điểm đầu tiên
+});
 
-// animation();
+canvas.addEventListener("mousemove", (event) => {
+  if (!movement) return;
 
-//Ball bouncing
+  position.x = event.offsetX;
+  position.y = event.offsetY;
+});
 
-let radius = 30;
-
-let ball1 = { x: 60, y: 60, dx: 3, dy: 4 };
-let ball2 = { x: 90, y: 30, dx: 4, dy: 3 };
+canvas.addEventListener("mouseup", () => {
+  movement = false;
+});
 
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ballBouncing(ball1);
-  ballBouncing(ball2);
+  if (movement) draw(position);
   requestAnimationFrame(gameLoop);
 }
-
-gameLoop();
-
-function ballBouncing(ball) {
-  //Draw ball
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, radius, 0, 2 * Math.PI);
-  ctx.fillStyle = "#ef4565";
-  ctx.fill();
-
-  //Movement logic
-  ball.x += ball.dx;
-  ball.y += ball.dy;
-  if (ball.x + radius >= canvas.width || ball.x - radius <= 0)
-    ball.dx = -ball.dx;
-  if (ball.y + radius >= canvas.height || ball.y - radius <= 0)
-    ball.dy = -ball.dy;
-}
+gameLoop()
