@@ -3,8 +3,8 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 //Square param
-const xSpeed = 5;
-const ySpeed = 5;
+const xSpeed = 300; //(pixel/s)
+const ySpeed = 300; //(pixel/s)
 const width = 20;
 const height = 20;
 
@@ -75,15 +75,19 @@ document.addEventListener("keyup", (event) => {
   }
 });
 
-function gameLoop() {
-  if (movement.arrowUp) position.y -= ySpeed;
-  if (movement.arrowDown) position.y += ySpeed;
-  if (movement.arrowLeft) position.x -= xSpeed;
-  if (movement.arrowRight) position.x += xSpeed;
+//Game Loop sử dụng delta time
+let lastTime = performance.now();
+function gameLoop(timeStamp) {
+  const dt = (timeStamp - lastTime) / 1000;
+  lastTime = timeStamp;
+  if (movement.arrowUp) position.y -= ySpeed * dt;
+  if (movement.arrowDown) position.y += ySpeed * dt;
+  if (movement.arrowLeft) position.x -= xSpeed * dt;
+  if (movement.arrowRight) position.x += xSpeed * dt;
   position.x = Math.max(0, Math.min(canvas.width - width, position.x));
   position.y = Math.max(0, Math.min(canvas.height - height, position.y));
   draw(position);
   requestAnimationFrame(gameLoop);
 }
 draw(position);
-gameLoop();
+requestAnimationFrame(gameLoop);
