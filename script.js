@@ -1,74 +1,90 @@
 // 1. STATE GAME
 
-const gameState = {
+const gameCanvas = {
   canvas: null,
   ctx: null,
-  player: {
-    x: 10,
-    y: 10,
-    size: 20,
-    speed: 300, //(pixel/s)
-  },
-  movement: {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-  },
-  KEY: {
-    ArrowUp: "up",
-    w: "up",
-    W: "up",
-    ArrowDown: "down",
-    s: "down",
-    S: "down",
-    ArrowLeft: "left",
-    a: "left",
-    A: "left",
-    ArrowRight: "right",
-    d: "right",
-    D: "right",
-  },
   lastTime: 0,
+};
+
+//MOVEMENT
+const movement = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+};
+
+//KEY CONTROL
+const KEY = {
+  ArrowUp: "up",
+  w: "up",
+  W: "up",
+  ArrowDown: "down",
+  s: "down",
+  S: "down",
+  ArrowLeft: "left",
+  a: "left",
+  A: "left",
+  ArrowRight: "right",
+  d: "right",
+  D: "right",
+};
+
+//PLAYER
+const player = {
+  x: 10,
+  y: 10,
+  size: 20,
+  color: "#3da9fc",
+  speed: 300, //(pixel/s)
+};
+
+//ENEMY
+const enemy = {
+  x: 20,
+  y: 30,
+  radius: 10,
+  color: "#ef4565",
+  speed: 200, // pixel/s
 };
 
 // 2. GAME INIT
 function init() {
   //Khởi tạo canvas và ctx
-  gameState.canvas = document.getElementById("canvas");
-  gameState.ctx = gameState.canvas.getContext("2d");
+  gameCanvas.canvas = document.getElementById("canvas");
+  gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
 
   //Gắn sự kiện ấn phím
   document.addEventListener("keydown", handleKeyDown);
   document.addEventListener("keyup", handleKeyUp);
 
   //Tạo game loop
-  gameState.lastTime = performance.now();
+  gameCanvas.lastTime = performance.now();
   requestAnimationFrame(gameLoop);
 }
 
 // 3. EVENT KEY HANDLER
 function handleKeyDown(event) {
-  const key = gameState.KEY[event.key];
-  if (key) gameState.movement[key] = true;
+  const key = KEY[event.key];
+  if (key) movement[key] = true;
 }
 
 function handleKeyUp(event) {
-  const key = gameState.KEY[event.key];
-  if (key) gameState.movement[key] = false;
+  const key = KEY[event.key];
+  if (key) movement[key] = false;
 }
 
 // 4. DRAW FUNCTION
 function draw() {
-  const { ctx, player } = gameState;
-  ctx.clearRect(0, 0, gameState.canvas.width, gameState.canvas.height);
-  ctx.fillStyle = "#ef4565";
+  const { ctx } = gameCanvas;
+  ctx.clearRect(0, 0, gameCanvas.canvas.width, gameCanvas.canvas.height);
+  ctx.fillStyle = player.color;
   ctx.fillRect(player.x, player.y, player.size, player.size);
 }
 
 // 5. UPDATE FUNCTION
 function update(dt) {
-  const { player, movement, canvas } = gameState;
+  const { canvas } = gameCanvas;
 
   //Update vị trí player
   if (movement.up) player.y -= player.speed * dt;
@@ -83,12 +99,11 @@ function update(dt) {
 
 // 6. GAMELOOP
 function gameLoop(timeStamp) {
-  const dt = (timeStamp - gameState.lastTime) / 1000;
-  gameState.lastTime = timeStamp;
+  const dt = (timeStamp - gameCanvas.lastTime) / 1000;
+  gameCanvas.lastTime = timeStamp;
   update(dt);
   draw();
   requestAnimationFrame(gameLoop);
 }
 
 init();
-
