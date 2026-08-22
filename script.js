@@ -4,6 +4,7 @@ const gameCanvas = {
   canvas: null,
   ctx: null,
   lastTime: 0,
+  state: "PLAYING",
 };
 
 //MOVEMENT
@@ -65,6 +66,17 @@ function init() {
 
 // 3. EVENT KEY HANDLER
 function handleKeyDown(event) {
+  //Handle change state Pause/Playing
+  if (event.key === "Escape") {
+    gameCanvas.state = "PAUSE";
+    return;
+  }
+  if (event.key === "Enter" || event.key === " ") {
+    gameCanvas.state = "PLAYING";
+    return;
+  }
+
+  //Handle moving input
   const key = KEY[event.key];
   if (key) movement[key] = true;
 }
@@ -99,11 +111,22 @@ function update(dt) {
 
 // 6. GAMELOOP
 function gameLoop(timeStamp) {
-  const dt = (timeStamp - gameCanvas.lastTime) / 1000;
-  gameCanvas.lastTime = timeStamp;
-  update(dt);
-  draw();
-  requestAnimationFrame(gameLoop);
+  switch (gameCanvas.state) {
+    case "PLAYING": {
+      const dt = (timeStamp - gameCanvas.lastTime) / 1000;
+      gameCanvas.lastTime = timeStamp;
+      update(dt);
+      draw();
+      requestAnimationFrame(gameLoop);
+      break;
+    }
+    case "PAUSE": {
+      gameCanvas.lastTime = timeStamp;
+      draw();
+      requestAnimationFrame(gameLoop);
+      break;
+    }
+  }
 }
 
 init();
