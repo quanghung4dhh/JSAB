@@ -41,11 +41,11 @@ const player = {
 
 //ENEMY
 const enemy = {
-  x: 20,
-  y: 30,
+  x: 200,
+  y: 300,
   radius: 10,
   color: "#ef4565",
-  Xspeed: 200, // pixel/s
+  Xspeed: 100, // pixel/s
   Yspeed: 300, // pixel/s
 };
 
@@ -72,9 +72,12 @@ function handleKeyDown(event) {
     return;
   }
   if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
     gameCanvas.state = "PLAYING";
     return;
   }
+
+  if (gameCanvas.state !== "PLAYING") return; 
 
   //Handle moving input
   const key = KEY[event.key];
@@ -133,7 +136,23 @@ function updateBall(dt) {
     enemy.Yspeed = -enemy.Yspeed;
 }
 
-// 6. GAMELOOP
+// 6. CHECK COLLISION
+function checkCollision() {
+  if (gameCanvas.state !== "PLAYING") return
+  
+  //Get the coordinate
+  const { x: xp, y: yp, size } = player;
+  const { x: x2, y: y2, radius } = enemy;
+
+  const x1 = xp + size / 2;
+  const y1 = yp + size / 2;
+
+  //Collision condition
+  if (Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) <= size / 2 + radius)
+    gameCanvas.state = "GAME OVER";
+}
+
+// 7. GAMELOOP
 function gameLoop(timeStamp) {
   switch (gameCanvas.state) {
     case "PLAYING": {
@@ -143,12 +162,15 @@ function gameLoop(timeStamp) {
       updateBall(dt);
       draw();
       drawBall();
+      checkCollision();
       requestAnimationFrame(gameLoop);
       break;
     }
-    case "PAUSE": {
+    case "PAUSE":
+    case "GAME OVER": {
       gameCanvas.lastTime = timeStamp;
       draw();
+      drawBall();
       requestAnimationFrame(gameLoop);
       break;
     }
