@@ -1,5 +1,4 @@
 // 1. STATE GAME
-
 const gameCanvas = {
   canvas: null,
   ctx: null,
@@ -46,7 +45,8 @@ const enemy = {
   y: 30,
   radius: 10,
   color: "#ef4565",
-  speed: 200, // pixel/s
+  Xspeed: 200, // pixel/s
+  Yspeed: 300, // pixel/s
 };
 
 // 2. GAME INIT
@@ -94,6 +94,15 @@ function draw() {
   ctx.fillRect(player.x, player.y, player.size, player.size);
 }
 
+// Draw enemy
+function drawBall() {
+  const { ctx } = gameCanvas;
+  ctx.fillStyle = enemy.color;
+  ctx.beginPath();
+  ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 // 5. UPDATE FUNCTION
 function update(dt) {
   const { canvas } = gameCanvas;
@@ -109,6 +118,21 @@ function update(dt) {
   player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
 }
 
+// Update Ball
+function updateBall(dt) {
+  const { canvas } = gameCanvas;
+
+  //Moving the ball
+  enemy.x += enemy.Xspeed * dt;
+  enemy.y += enemy.Yspeed * dt;
+
+  //Boucing
+  if (enemy.x + enemy.radius >= canvas.width || enemy.x - enemy.radius < 0)
+    enemy.Xspeed = -enemy.Xspeed;
+  if (enemy.y + enemy.radius >= canvas.height || enemy.y - enemy.radius < 0)
+    enemy.Yspeed = -enemy.Yspeed;
+}
+
 // 6. GAMELOOP
 function gameLoop(timeStamp) {
   switch (gameCanvas.state) {
@@ -116,7 +140,9 @@ function gameLoop(timeStamp) {
       const dt = (timeStamp - gameCanvas.lastTime) / 1000;
       gameCanvas.lastTime = timeStamp;
       update(dt);
+      updateBall(dt);
       draw();
+      drawBall();
       requestAnimationFrame(gameLoop);
       break;
     }
