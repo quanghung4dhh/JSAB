@@ -32,8 +32,8 @@ const KEY = {
 
 //PLAYER
 const player = {
-  x: 10,
-  y: 10,
+  x: 0,
+  y: 0,
   size: 20,
   color: "#3da9fc",
   speed: 300, //(pixel/s)
@@ -45,8 +45,8 @@ const enemy = {
   y: 300,
   radius: 10,
   color: "#ef4565",
-  Xspeed: 100, // pixel/s
-  Yspeed: 300, // pixel/s
+  xSpeed: 100, // pixel/s
+  ySpeed: 300, // pixel/s
 };
 
 // 2. GAME INIT
@@ -54,6 +54,10 @@ function init() {
   //Khởi tạo canvas và ctx
   gameCanvas.canvas = document.getElementById("canvas");
   gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
+
+  //Set vị trí ban đầu cho player
+  player.x = gameCanvas.canvas.width / 2 - player.size / 2;
+  player.y = gameCanvas.canvas.height / 2 - player.size / 2;
 
   //Gắn sự kiện ấn phím
   document.addEventListener("keydown", handleKeyDown);
@@ -66,18 +70,25 @@ function init() {
 
 // 3. EVENT KEY HANDLER
 function handleKeyDown(event) {
-  //Handle change state Pause/Playing
-  if (event.key === "Escape") {
+  //Handle change state Pause/Playing/Game over
+  if (event.key === "Escape" && gameCanvas.state === "PLAYING") {
     gameCanvas.state = "PAUSE";
     return;
   }
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
-    gameCanvas.state = "PLAYING";
-    return;
+    if (gameCanvas.state === "PAUSE") {
+      gameCanvas.state = "PLAYING";
+      return;
+    }
+    if (gameCanvas.state === "GAME OVER") {
+      resetGame();
+      gameCanvas.state = "PLAYING";
+      return;
+    }
   }
 
-  if (gameCanvas.state !== "PLAYING") return; 
+  if (gameCanvas.state !== "PLAYING") return;
 
   //Handle moving input
   const key = KEY[event.key];
@@ -92,7 +103,6 @@ function handleKeyUp(event) {
 // 4. DRAW FUNCTION
 function draw() {
   const { ctx } = gameCanvas;
-  ctx.clearRect(0, 0, gameCanvas.canvas.width, gameCanvas.canvas.height);
   ctx.fillStyle = player.color;
   ctx.fillRect(player.x, player.y, player.size, player.size);
 }
@@ -104,6 +114,32 @@ function drawBall() {
   ctx.beginPath();
   ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// Draw UI
+function drawUI() {
+  if (gameCanvas.state === "PLAYING") return;
+
+  //Draw PAUSE
+  const { ctx, canvas, state } = gameCanvas;
+  if (state === "PAUSE") {
+    ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#fffffe";
+    ctx.font = "30px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+    return;
+  }
+  if (state === "GAME OVER") {
+    ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#fffffe";
+    ctx.font = "30px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    return;
+  }
 }
 
 // 5. UPDATE FUNCTION
@@ -126,20 +162,20 @@ function updateBall(dt) {
   const { canvas } = gameCanvas;
 
   //Moving the ball
-  enemy.x += enemy.Xspeed * dt;
-  enemy.y += enemy.Yspeed * dt;
+  enemy.x += enemy.xSpeed * dt;
+  enemy.y += enemy.ySpeed * dt;
 
   //Boucing
   if (enemy.x + enemy.radius >= canvas.width || enemy.x - enemy.radius < 0)
-    enemy.Xspeed = -enemy.Xspeed;
+    enemy.xSpeed = -enemy.xSpeed;
   if (enemy.y + enemy.radius >= canvas.height || enemy.y - enemy.radius < 0)
-    enemy.Yspeed = -enemy.Yspeed;
+    enemy.ySpeed = -enemy.ySpeed;
 }
 
 // 6. CHECK COLLISION
 function checkCollision() {
-  if (gameCanvas.state !== "PLAYING") return
-  
+  if (gameCanvas.state !== "PLAYING") return;
+
   //Get the coordinate
   const { x: xp, y: yp, size } = player;
   const { x: x2, y: y2, radius } = enemy;
@@ -152,7 +188,22 @@ function checkCollision() {
     gameCanvas.state = "GAME OVER";
 }
 
-// 7. GAMELOOP
+// 7. Reset Game
+function resetGame() {
+  //Reset player
+  const { canvas } = gameCanvas;
+  player.x = canvas.width / 2 - player.size / 2;
+  player.y = canvas.height / 2 - player.size / 2;
+
+  //Reset enemy
+  enemy.x = 200;
+  enemy.y = 300;
+
+  //Reset movement
+  movement.up = movement.down = movement.left = movement.right = false;
+}
+
+// 8. GAMELOOP
 function gameLoop(timeStamp) {
   switch (gameCanvas.state) {
     case "PLAYING": {
@@ -160,17 +211,31 @@ function gameLoop(timeStamp) {
       gameCanvas.lastTime = timeStamp;
       update(dt);
       updateBall(dt);
+      checkCollision();
+      gameCanvas.ctx.clearRect(
+        0,
+        0,
+        gameCanvas.canvas.width,
+        gameCanvas.canvas.height,
+      );
       draw();
       drawBall();
-      checkCollision();
       requestAnimationFrame(gameLoop);
       break;
     }
     case "PAUSE":
     case "GAME OVER": {
       gameCanvas.lastTime = timeStamp;
+      gameCanvas.ctx.clearRect(
+        0,
+        0,
+        gameCanvas.canvas.width,
+        gameCanvas.canvas.height,
+      );
+
       draw();
       drawBall();
+      drawUI();
       requestAnimationFrame(gameLoop);
       break;
     }
