@@ -127,34 +127,24 @@ function drawUI() {
   if (gameCanvas.state === "PLAYING") return;
 
   const { ctx, canvas, state } = gameCanvas;
+  ctx.fillStyle = "rgba(15, 14, 23, 0.9)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fffffe";
+  ctx.font = "30px sans-serif";
+  ctx.textAlign = "center";
   switch (state) {
     //Draw MENU
     case "MENU": {
-      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#fffffe";
-      ctx.font = "30px sans-serif";
-      ctx.textAlign = "center";
       ctx.fillText("Press Enter to start", canvas.width / 2, canvas.height / 2);
       break;
     }
     //Draw PAUSE
     case "PAUSE": {
-      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#fffffe";
-      ctx.font = "30px sans-serif";
-      ctx.textAlign = "center";
       ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
       break;
     }
     //Draw GAME OVER
     case "GAME OVER": {
-      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#fffffe";
-      ctx.font = "30px sans-serif";
-      ctx.textAlign = "center";
       ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
       break;
     }
@@ -165,16 +155,29 @@ function drawUI() {
 function draw() {
   const { ctx, canvas, state } = gameCanvas;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (state === "PLAYING") {
-    drawPlayer();
-    drawBall();
-  } else {
-    drawUI();
+  switch (state) {
+    case "MENU": {
+      drawUI();
+      break;
+    }
+    case "PLAYING": {
+      drawPlayer();
+      drawBall();
+      break;
+    }
+    case "GAME OVER":
+    case "PAUSE": {
+      drawPlayer();
+      drawBall();
+      drawUI();
+      break;
+    }
   }
 }
 
 // 5. UPDATE FUNCTION
-function update(dt) {
+// Update Player
+function updatePlayer(dt) {
   const { canvas } = gameCanvas;
 
   //Update vị trí player
@@ -203,6 +206,15 @@ function updateBall(dt) {
     enemy.ySpeed = -enemy.ySpeed;
 }
 
+// Update all
+function update(dt) {
+  const { state } = gameCanvas;
+  if (state === "PLAYING") {
+    updatePlayer(dt);
+    updateBall(dt);
+    checkCollision()
+  }
+}
 // 6. CHECK COLLISION
 function checkCollision() {
   if (gameCanvas.state !== "PLAYING") return;
@@ -237,10 +249,9 @@ function resetGame() {
 // 8. GAMELOOP
 function gameLoop(timeStamp) {
   const dt = (timeStamp - gameCanvas.lastTime) / 1000;
+  dt = Math.min(dt, 0.1)
   gameCanvas.lastTime = timeStamp;
   update(dt);
-  updateBall(dt);
-  checkCollision();
   draw();
   requestAnimationFrame(gameLoop);
 }
