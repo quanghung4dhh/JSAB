@@ -3,7 +3,7 @@ const gameCanvas = {
   canvas: null,
   ctx: null,
   lastTime: 0,
-  state: "PLAYING",
+  state: "MENU",
 };
 
 //MOVEMENT
@@ -92,7 +92,7 @@ function handleStateKeyDown(event) {
       gameCanvas.state = "PLAYING";
       return;
     }
-    if (gameCanvas.state === "GAME OVER") {
+    if (gameCanvas.state === "GAME OVER" || gameCanvas.state === "MENU") {
       resetGame();
       gameCanvas.state = "PLAYING";
       return;
@@ -106,7 +106,8 @@ function handleKeyUp(event) {
 }
 
 // 4. DRAW FUNCTION
-function draw() {
+//Draw player
+function drawPlayer() {
   const { ctx } = gameCanvas;
   ctx.fillStyle = player.color;
   ctx.fillRect(player.x, player.y, player.size, player.size);
@@ -125,25 +126,50 @@ function drawBall() {
 function drawUI() {
   if (gameCanvas.state === "PLAYING") return;
 
-  //Draw PAUSE
   const { ctx, canvas, state } = gameCanvas;
-  if (state === "PAUSE") {
-    ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#fffffe";
-    ctx.font = "30px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
-    return;
+  switch (state) {
+    //Draw MENU
+    case "MENU": {
+      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fffffe";
+      ctx.font = "30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Press Enter to start", canvas.width / 2, canvas.height / 2);
+      break;
+    }
+    //Draw PAUSE
+    case "PAUSE": {
+      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fffffe";
+      ctx.font = "30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+      break;
+    }
+    //Draw GAME OVER
+    case "GAME OVER": {
+      ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fffffe";
+      ctx.font = "30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+      break;
+    }
   }
-  if (state === "GAME OVER") {
-    ctx.fillStyle = "rgba(15, 14, 23, 0.8)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#fffffe";
-    ctx.font = "30px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-    return;
+}
+
+//Draw
+function draw() {
+  const { ctx, canvas, state } = gameCanvas;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (state === "PLAYING") {
+    drawPlayer();
+    drawBall();
+  } else {
+    drawUI();
   }
 }
 
@@ -210,41 +236,13 @@ function resetGame() {
 
 // 8. GAMELOOP
 function gameLoop(timeStamp) {
-  switch (gameCanvas.state) {
-    case "PLAYING": {
-      const dt = (timeStamp - gameCanvas.lastTime) / 1000;
-      gameCanvas.lastTime = timeStamp;
-      update(dt);
-      updateBall(dt);
-      checkCollision();
-      gameCanvas.ctx.clearRect(
-        0,
-        0,
-        gameCanvas.canvas.width,
-        gameCanvas.canvas.height,
-      );
-      draw();
-      drawBall();
-      requestAnimationFrame(gameLoop);
-      break;
-    }
-    case "PAUSE":
-    case "GAME OVER": {
-      gameCanvas.lastTime = timeStamp;
-      gameCanvas.ctx.clearRect(
-        0,
-        0,
-        gameCanvas.canvas.width,
-        gameCanvas.canvas.height,
-      );
-
-      draw();
-      drawBall();
-      drawUI();
-      requestAnimationFrame(gameLoop);
-      break;
-    }
-  }
+  const dt = (timeStamp - gameCanvas.lastTime) / 1000;
+  gameCanvas.lastTime = timeStamp;
+  update(dt);
+  updateBall(dt);
+  checkCollision();
+  draw();
+  requestAnimationFrame(gameLoop);
 }
 
 init();
