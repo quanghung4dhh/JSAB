@@ -70,7 +70,18 @@ function init() {
 
 // 3. EVENT KEY HANDLER
 function handleKeyDown(event) {
-  //Handle change state Pause/Playing/Game over
+  //Handle moving input
+  if (gameCanvas.state === "PLAYING") {
+    const key = KEY[event.key];
+    if (key) movement[key] = true;
+  }
+
+  //Handle state change
+  handleStateKeyDown(event);
+}
+
+//Handle changing state MENU/PAUSE/GAME OVER
+function handleStateKeyDown(event) {
   if (event.key === "Escape" && gameCanvas.state === "PLAYING") {
     gameCanvas.state = "PAUSE";
     return;
@@ -87,12 +98,6 @@ function handleKeyDown(event) {
       return;
     }
   }
-
-  if (gameCanvas.state !== "PLAYING") return;
-
-  //Handle moving input
-  const key = KEY[event.key];
-  if (key) movement[key] = true;
 }
 
 function handleKeyUp(event) {
