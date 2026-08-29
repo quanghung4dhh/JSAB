@@ -6,6 +6,14 @@ const gameCanvas = {
   state: "MENU",
 };
 
+//STATE
+const STATE = {
+  MENU: "MENU",
+  PLAYING: "PLAYING",
+  PAUSE: "PAUSE",
+  GAME_OVER: "GAME OVER",
+};
+
 //MOVEMENT
 const movement = {
   up: false,
@@ -71,7 +79,7 @@ function init() {
 // 3. EVENT KEY HANDLER
 function handleKeyDown(event) {
   //Handle moving input
-  if (gameCanvas.state === "PLAYING") {
+  if (gameCanvas.state === STATE.PLAYING) {
     const key = KEY[event.key];
     if (key) movement[key] = true;
   }
@@ -82,19 +90,23 @@ function handleKeyDown(event) {
 
 //Handle changing state MENU/PAUSE/GAME OVER
 function handleStateKeyDown(event) {
-  if (event.key === "Escape" && gameCanvas.state === "PLAYING") {
-    gameCanvas.state = "PAUSE";
+  if (event.key === "Escape" && gameCanvas.state === STATE.PLAYING) {
+    gameCanvas.state = STATE.PAUSE;
     return;
   }
   if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    if (gameCanvas.state === "PAUSE") {
-      gameCanvas.state = "PLAYING";
+    if (gameCanvas.state === STATE.PAUSE) {
+      event.preventDefault();
+      gameCanvas.state = STATE.PLAYING;
       return;
     }
-    if (gameCanvas.state === "GAME OVER" || gameCanvas.state === "MENU") {
+    if (
+      gameCanvas.state === STATE.GAME_OVER ||
+      gameCanvas.state === STATE.MENU
+    ) {
+      event.preventDefault();
       resetGame();
-      gameCanvas.state = "PLAYING";
+      gameCanvas.state = STATE.PLAYING;
       return;
     }
   }
@@ -124,8 +136,6 @@ function drawBall() {
 
 // Draw UI
 function drawUI() {
-  if (gameCanvas.state === "PLAYING") return;
-
   const { ctx, canvas, state } = gameCanvas;
   ctx.fillStyle = "rgba(15, 14, 23, 0.9)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -134,18 +144,18 @@ function drawUI() {
   ctx.textAlign = "center";
   switch (state) {
     //Draw MENU
-    case "MENU": {
+    case STATE.MENU: {
       ctx.fillText("Press Enter to start", canvas.width / 2, canvas.height / 2);
       break;
     }
     //Draw PAUSE
-    case "PAUSE": {
+    case STATE.PAUSE: {
       ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
       break;
     }
     //Draw GAME OVER
-    case "GAME OVER": {
-      ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    case STATE.GAME_OVER: {
+      ctx.fillText(STATE.GAME_OVER, canvas.width / 2, canvas.height / 2);
       break;
     }
   }
@@ -156,17 +166,17 @@ function draw() {
   const { ctx, canvas, state } = gameCanvas;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   switch (state) {
-    case "MENU": {
+    case STATE.MENU: {
       drawUI();
       break;
     }
-    case "PLAYING": {
+    case STATE.PLAYING: {
       drawPlayer();
       drawBall();
       break;
     }
-    case "GAME OVER":
-    case "PAUSE": {
+    case STATE.GAME_OVER:
+    case STATE.PAUSE: {
       drawPlayer();
       drawBall();
       drawUI();
@@ -209,15 +219,15 @@ function updateBall(dt) {
 // Update all
 function update(dt) {
   const { state } = gameCanvas;
-  if (state === "PLAYING") {
+  if (state === STATE.PLAYING) {
     updatePlayer(dt);
     updateBall(dt);
-    checkCollision()
+    checkCollision();
   }
 }
 // 6. CHECK COLLISION
 function checkCollision() {
-  if (gameCanvas.state !== "PLAYING") return;
+  if (gameCanvas.state !== STATE.PLAYING) return;
 
   //Get the coordinate
   const { x: xp, y: yp, size } = player;
@@ -228,7 +238,7 @@ function checkCollision() {
 
   //Collision condition
   if (Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) <= size / 2 + radius)
-    gameCanvas.state = "GAME OVER";
+    gameCanvas.state = STATE.GAME_OVER;
 }
 
 // 7. Reset Game
@@ -248,8 +258,8 @@ function resetGame() {
 
 // 8. GAMELOOP
 function gameLoop(timeStamp) {
-  const dt = (timeStamp - gameCanvas.lastTime) / 1000;
-  dt = Math.min(dt, 0.1)
+  let dt = (timeStamp - gameCanvas.lastTime) / 1000;
+  dt = Math.min(dt, 0.1);
   gameCanvas.lastTime = timeStamp;
   update(dt);
   draw();
