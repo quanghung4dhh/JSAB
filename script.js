@@ -1,10 +1,4 @@
 // 1. STATE GAME
-const gameCanvas = {
-  canvas: null,
-  ctx: null,
-  lastTime: 0,
-  state: "MENU",
-};
 
 //STATE
 const STATE = {
@@ -12,6 +6,14 @@ const STATE = {
   PLAYING: "PLAYING",
   PAUSE: "PAUSE",
   GAME_OVER: "GAME OVER",
+};
+
+//GAME CANVAS MANAGEMENT
+const gameCanvas = {
+  canvas: null,
+  ctx: null,
+  lastTime: 0,
+  state: STATE.MENU,
 };
 
 //MOVEMENT
@@ -251,6 +253,8 @@ function resetGame() {
   //Reset enemy
   enemy.x = 200;
   enemy.y = 300;
+  enemy.xSpeed = 100;
+  enemy.ySpeed = 300;
 
   //Reset movement
   movement.up = movement.down = movement.left = movement.right = false;
