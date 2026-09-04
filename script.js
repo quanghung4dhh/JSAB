@@ -215,34 +215,18 @@ function drawUI() {
 }
 
 function draw() {
-  const { ctx } = gameCanvas;
+  const { ctx, canvas } = gameCanvas;
 
-  //Cleat canvas
+  //Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   //Draw based on game state
-  switch (gameCanvas.state) {
-    case STATE.PLAYING: {
-      drawPlayer();
-      drawEnemy();
-      break;
-    }
-    case STATE.PAUSE: {
-      drawPlayer();
-      drawEnemy();
-      drawUI();
-      break;
-    }
-    case STATE.MENU: {
-      drawUI();
-      break;
-    }
-    case STATE.GAME_OVER: {
-      drawPlayer();
-      drawEnemy();
-      drawUI();
-      break;
-    }
+  if (gameCanvas.state !== STATE.MENU) {
+    drawPlayer();
+    drawEnemy();
+  }
+  if (gameCanvas.state !== STATE.PLAYING) {
+    drawUI();
   }
 }
 
