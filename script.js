@@ -41,21 +41,15 @@ const KEY = {
 // PLAYER
 const player = {
   color: "#3da9fc",
-  size: 20,
+  width: 20,
+  height: 20,
   speed: 400, //pixel/s
   x: 0,
   y: 0,
 };
 
-// ENEMY
-const enemy = {
-  color: "#ef4565",
-  radius: 10,
-  xSpeed: 300, //pixel/s
-  ySpeed: 500, //pixel/s
-  x: 0,
-  y: 0,
-};
+// OBSTACLES
+let obstacles = [];
 
 // 2. GAME INIT
 
@@ -64,11 +58,38 @@ function init() {
   gameCanvas.canvas = document.getElementById("canvas");
   gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
 
-  //Set initial postion for player and enemy
-  player.x = (gameCanvas.canvas.width - player.size) / 2;
-  player.y = (gameCanvas.canvas.height - player.size) / 2;
-  enemy.x = 500;
-  enemy.y = 600;
+  //Set initial postion for player
+  player.x = (gameCanvas.canvas.width - player.width) / 2;
+  player.y = (gameCanvas.canvas.height - player.height) / 2;
+
+  //Init obstacles
+  const enemy1 = {
+    color: "#ef4565",
+    x: 100,
+    y: -100,
+    width: 50,
+    height: 100,
+    ySpeed: 200, //pixel/s
+  };
+
+  const enemy2 = {
+    color: "#ef4565",
+    x: 400,
+    y: -40,
+    width: 90,
+    height: 40,
+    ySpeed: 300, //pixel/s
+  };
+  const enemy3 = {
+    color: "#ef4565",
+    x: 600,
+    y: -200,
+    width: 40,
+    height: 200,
+    ySpeed: 350, //pixel/s
+  };
+
+  obstacles = [enemy1, enemy2, enemy3];
 
   //Set key control
   document.addEventListener("keydown", handleKeyDown);
@@ -115,12 +136,37 @@ function handleKeyUp(event) {
 //3. RESET GAME
 function resetGame() {
   //Set initial postion for player and enemy
-  player.x = (gameCanvas.canvas.width - player.size) / 2;
-  player.y = (gameCanvas.canvas.height - player.size) / 2;
-  enemy.x = 500;
-  enemy.y = 600;
-  enemy.xSpeed = 300; //pixel/s
-  enemy.ySpeed = 500; //pixel/s
+  player.x = (gameCanvas.canvas.width - player.width) / 2;
+  player.y = (gameCanvas.canvas.height - player.height) / 2;
+
+  //Init obstacles
+  const enemy1 = {
+    color: "#ef4565",
+    x: 100,
+    y: -100,
+    width: 50,
+    height: 100,
+    ySpeed: 200, //pixel/s
+  };
+
+  const enemy2 = {
+    color: "#ef4565",
+    x: 400,
+    y: -40,
+    width: 90,
+    height: 40,
+    ySpeed: 300, //pixel/s
+  };
+  const enemy3 = {
+    color: "#ef4565",
+    x: 600,
+    y: -200,
+    width: 40,
+    height: 200,
+    ySpeed: 350, //pixel/s
+  };
+
+  obstacles = [enemy1, enemy2, enemy3];
 
   //Reset movement
   movement.left = movement.right = movement.up = movement.down = false;
@@ -131,16 +177,16 @@ function drawPlayer() {
   const { ctx } = gameCanvas;
 
   ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.size, player.size);
+  ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
 function drawEnemy() {
   const { ctx } = gameCanvas;
 
-  ctx.fillStyle = enemy.color;
-  ctx.beginPath();
-  ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-  ctx.fill();
+  obstacles.forEach((enemy) => {
+    ctx.fillStyle = enemy.color;
+    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+  });
 }
 
 function drawUI() {
@@ -213,21 +259,17 @@ function updatePlayer(dt) {
   if (movement.left) player.x -= player.speed * dt;
 
   //Limit the player position
-  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
-  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
 }
 
 function updateEnemy(dt) {
   const { canvas } = gameCanvas;
 
-  enemy.x += enemy.xSpeed * dt;
-  enemy.y += enemy.ySpeed * dt;
-
-  //Make the ball bouncing
-  if (enemy.x + enemy.radius >= canvas.width || enemy.x - enemy.radius < 0)
-    enemy.xSpeed = -enemy.xSpeed;
-  if (enemy.y + enemy.radius >= canvas.height || enemy.y - enemy.radius < 0)
-    enemy.ySpeed = -enemy.ySpeed;
+  obstacles.forEach((enemy) => {
+    enemy.y += enemy.ySpeed * dt;
+    if (enemy.y >= canvas.height) enemy.y = -enemy.height;
+  });
 }
 
 function update(dt) {
@@ -242,18 +284,29 @@ function update(dt) {
 // 6. Check collision
 
 function checkCollision() {
-  const { x: xp, y: yp } = player;
-  const { x: x2, y: y2 } = enemy;
+  obstacles.forEach((enemy) => {
+    if (checkAABBCollision(player, enemy)) gameCanvas.state = STATE.GAME_OVER;
+  });
+}
 
-  //Get the center coordinate of player
-  const x1 = xp + player.size / 2;
-  const y1 = yp + player.size / 2;
+//Check AABB Collision condition
+function checkAABBCollision(A, B) {
+  const [leftA, rightA, topA, bottomA] = [
+    A.x,
+    A.x + A.width,
+    A.y,
+    A.y + A.height,
+  ];
+  const [leftB, rightB, topB, bottomB] = [
+    B.x,
+    B.x + B.width,
+    B.y,
+    B.y + B.height,
+  ];
 
-  //Calculate distance
-  const d = Math.sqrt((y1 - y2) ** 2 + (x1 - x2) ** 2);
-
-  //Collision condition
-  if (d <= player.size / 2 + enemy.radius) gameCanvas.state = STATE.GAME_OVER;
+  if (leftA < rightB && rightA > leftB && topA < bottomB && bottomA > topB)
+    return true;
+  return false;
 }
 
 // 7. GameLoop
