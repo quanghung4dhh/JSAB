@@ -40,6 +40,8 @@ const KEY = {
 
 let obstacles = []; //Obstacle array
 
+let spawnTimer = 0; // Spawn Timer for spawning obstacle
+
 // 1.1 OBSTACLE CLASS
 
 class Obstacle {
@@ -51,13 +53,14 @@ class Obstacle {
     this.speed = speed;
     this.color = color;
     this.type = type;
+    this.active = true;
   }
   update(dt) {
     if (this.type === "falling") {
-      if (this.y >= gameCanvas.canvas.height) return "out";
+      if (this.y >= gameCanvas.canvas.height) this.active = false;
       this.y += this.speed * dt;
     } else if (this.type === "passing") {
-      if (this.x >= gameCanvas.canvas.width) return "out";
+      if (this.x >= gameCanvas.canvas.width) this.active = false;
       this.x += this.speed * dt;
     }
   }
@@ -68,7 +71,6 @@ class Obstacle {
 }
 
 // 1.2 PLAYER CLASS
-let player;
 class Player {
   constructor(x, y, width, height, speed, color) {
     this.x = x;
@@ -100,6 +102,8 @@ class Player {
   }
 }
 
+let player = new Player(0, 0, 20, 20, 400, "#3da9fc");
+
 // 2. GAME INIT
 
 function init() {
@@ -108,7 +112,6 @@ function init() {
   gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
 
   //Init player object
-  player = new Player(0, 0, 20, 20, 400, "#3da9fc");
   player.x = (gameCanvas.canvas.width - player.width) / 2;
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
@@ -145,9 +148,11 @@ function handleKeyDown(event) {
 function handleStateKey(event) {
   let { state } = gameCanvas;
   if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    if (state === STATE.PAUSE) gameCanvas.state = STATE.PLAYING;
-    else if (state === STATE.GAME_OVER || state === STATE.MENU) {
+    if (state === STATE.PAUSE) {
+      event.preventDefault();
+      gameCanvas.state = STATE.PLAYING;
+    } else if (state === STATE.GAME_OVER || state === STATE.MENU) {
+      event.preventDefault();
       resetGame();
       gameCanvas.state = STATE.PLAYING;
     }
@@ -176,6 +181,9 @@ function resetGame() {
 
   //Reset movement
   movement.left = movement.right = movement.up = movement.down = false;
+
+  //Reset spawnTimer
+  spawnTimer = 0;
 }
 
 //4. DRAW
@@ -223,24 +231,47 @@ function draw() {
 
 // 5. UPDATE
 
+//Spawn obstacle funciton after ${spawnInterval} seconds
+
+function spawnObstacle(spawnInterval, dt) {
+  const { canvas } = gameCanvas;
+  spawnTimer += dt;
+  if (spawnTimer >= spawnInterval) {
+    spawnTimer = 0;
+    const randomeType = Math.random() >= 0.5 ? "falling" : "passing";
+
+    if (randomeType === "falling") {
+      const x = Math.random() * (canvas.width - 50);
+      obstacles.push(new Obstacle(x, -70, 50, 70, 300, "#ef4565", "falling"));
+    } else if (randomeType === "passing") {
+      const y = Math.random() * (canvas.height - 170);
+      obstacles.push(new Obstacle(-50, y, 50, 170, 250, "#ef4565", "passing"));
+    }
+  }
+}
+
 function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
   player.update(dt);
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    const isOut = obstacles[i].update(dt) === "out";
-    if (isOut) obstacles.splice(i, 1);
-  }
 
-  //Check Collision
-  checkCollision();
+  spawnObstacle(0.1, dt);
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    obstacles[i].update(dt);
+
+    //Check Collision
+    checkCollision(player, obstacles[i]);
+    if (gameCanvas.state !== STATE.PLAYING) break;
+
+    //Delete inactive obstacles
+    if (!obstacles[i].active) obstacles.splice(i, 1);
+  }
 }
 
 // 6. Check collision
 
-function checkCollision() {
-  obstacles.forEach((enemy) => {
-    if (checkAABBCollision(player, enemy)) gameCanvas.state = STATE.GAME_OVER;
-  });
+function checkCollision(player, enemy) {
+  if (checkAABBCollision(player, enemy)) gameCanvas.state = STATE.GAME_OVER;
 }
 
 //Check AABB Collision condition
