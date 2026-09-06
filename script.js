@@ -38,18 +38,67 @@ const KEY = {
   ArrowRight: "right",
 };
 
-// PLAYER
-const player = {
-  color: "#3da9fc",
-  width: 20,
-  height: 20,
-  speed: 400, //pixel/s
-  x: 0,
-  y: 0,
-};
+let obstacles = []; //Obstacle array
 
-// OBSTACLES
-let obstacles = [];
+// 1.1 OBSTACLE CLASS
+
+class Obstacle {
+  constructor(x, y, width, height, speed, color, type) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
+    this.color = color;
+    this.type = type;
+  }
+  update(dt) {
+    if (this.type === "falling") {
+      if (this.y >= gameCanvas.canvas.height) return "out";
+      this.y += this.speed * dt;
+    } else if (this.type === "passing") {
+      if (this.x >= gameCanvas.canvas.width) return "out";
+      this.x += this.speed * dt;
+    }
+  }
+  draw(ctx) {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+// 1.2 PLAYER CLASS
+let player;
+class Player {
+  constructor(x, y, width, height, speed, color) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
+    this.color = color;
+  }
+  update(dt) {
+    if (movement.left) this.x -= this.speed * dt;
+    if (movement.right) this.x += this.speed * dt;
+    if (movement.up) this.y -= this.speed * dt;
+    if (movement.down) this.y += this.speed * dt;
+
+    //Limit the player position
+    this.x = Math.max(
+      0,
+      Math.min(gameCanvas.canvas.width - this.width, this.x),
+    );
+    this.y = Math.max(
+      0,
+      Math.min(gameCanvas.canvas.height - this.height, this.y),
+    );
+  }
+  draw(ctx) {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
 
 // 2. GAME INIT
 
@@ -58,36 +107,15 @@ function init() {
   gameCanvas.canvas = document.getElementById("canvas");
   gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
 
-  //Set initial postion for player
+  //Init player object
+  player = new Player(0, 0, 20, 20, 400, "#3da9fc");
   player.x = (gameCanvas.canvas.width - player.width) / 2;
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
   //Init obstacles
-  const enemy1 = {
-    color: "#ef4565",
-    x: 100,
-    y: -100,
-    width: 50,
-    height: 100,
-    ySpeed: 200, //pixel/s
-  };
-
-  const enemy2 = {
-    color: "#ef4565",
-    x: 400,
-    y: -40,
-    width: 90,
-    height: 40,
-    ySpeed: 300, //pixel/s
-  };
-  const enemy3 = {
-    color: "#ef4565",
-    x: 600,
-    y: -200,
-    width: 40,
-    height: 200,
-    ySpeed: 350, //pixel/s
-  };
+  const enemy1 = new Obstacle(100, -100, 50, 100, 200, "#ef4565", "falling");
+  const enemy2 = new Obstacle(-90, 100, 90, 40, 300, "#ef4565", "passing");
+  const enemy3 = new Obstacle(600, -200, 40, 200, 350, "#ef4565", "falling");
 
   obstacles = [enemy1, enemy2, enemy3];
 
@@ -140,31 +168,9 @@ function resetGame() {
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
   //Init obstacles
-  const enemy1 = {
-    color: "#ef4565",
-    x: 100,
-    y: -100,
-    width: 50,
-    height: 100,
-    ySpeed: 200, //pixel/s
-  };
-
-  const enemy2 = {
-    color: "#ef4565",
-    x: 400,
-    y: -40,
-    width: 90,
-    height: 40,
-    ySpeed: 300, //pixel/s
-  };
-  const enemy3 = {
-    color: "#ef4565",
-    x: 600,
-    y: -200,
-    width: 40,
-    height: 200,
-    ySpeed: 350, //pixel/s
-  };
+  const enemy1 = new Obstacle(100, -100, 50, 100, 200, "#ef4565", "falling");
+  const enemy2 = new Obstacle(-90, 100, 90, 40, 100, "#ef4565", "passing");
+  const enemy3 = new Obstacle(600, -200, 40, 200, 250, "#ef4565", "falling");
 
   obstacles = [enemy1, enemy2, enemy3];
 
@@ -173,21 +179,6 @@ function resetGame() {
 }
 
 //4. DRAW
-function drawPlayer() {
-  const { ctx } = gameCanvas;
-
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-}
-
-function drawEnemy() {
-  const { ctx } = gameCanvas;
-
-  obstacles.forEach((enemy) => {
-    ctx.fillStyle = enemy.color;
-    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-  });
-}
 
 function drawUI() {
   if (gameCanvas.state === STATE.PLAYING) return;
@@ -222,8 +213,8 @@ function draw() {
 
   //Draw based on game state
   if (gameCanvas.state !== STATE.MENU) {
-    drawPlayer();
-    drawEnemy();
+    player.draw(ctx);
+    obstacles.forEach((enemy) => enemy.draw(ctx));
   }
   if (gameCanvas.state !== STATE.PLAYING) {
     drawUI();
@@ -231,35 +222,14 @@ function draw() {
 }
 
 // 5. UPDATE
-function updatePlayer(dt) {
-  const { canvas } = gameCanvas;
-
-  if (movement.down) player.y += player.speed * dt;
-
-  if (movement.up) player.y -= player.speed * dt;
-
-  if (movement.right) player.x += player.speed * dt;
-
-  if (movement.left) player.x -= player.speed * dt;
-
-  //Limit the player position
-  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-}
-
-function updateEnemy(dt) {
-  const { canvas } = gameCanvas;
-
-  obstacles.forEach((enemy) => {
-    enemy.y += enemy.ySpeed * dt;
-    if (enemy.y >= canvas.height) enemy.y = -enemy.height;
-  });
-}
 
 function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
-  updatePlayer(dt);
-  updateEnemy(dt);
+  player.update(dt);
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const isOut = obstacles[i].update(dt) === "out";
+    if (isOut) obstacles.splice(i, 1);
+  }
 
   //Check Collision
   checkCollision();
