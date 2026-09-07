@@ -44,8 +44,6 @@ const KEY = {
 
 let obstacles = []; //Obstacle array
 
-let spawnTimer = 0; // Spawn Timer for spawning obstacle
-
 // 1.1 OBSTACLE CLASS
 
 class Obstacle {
@@ -61,11 +59,11 @@ class Obstacle {
   }
   update(dt) {
     if (this.type === "falling") {
-      if (this.y >= gameCanvas.canvas.height) this.active = false;
       this.y += this.speed * dt;
+      if (this.y >= gameCanvas.canvas.height) this.active = false;
     } else if (this.type === "passing") {
-      if (this.x >= gameCanvas.canvas.width) this.active = false;
       this.x += this.speed * dt;
+      if (this.x >= gameCanvas.canvas.width) this.active = false;
     }
   }
   draw(ctx) {
@@ -108,9 +106,22 @@ class Player {
 
 let player = new Player(0, 0, 20, 20, 400, "#3da9fc");
 
+// LOAD LEVEL
+let currentLevel = null;
+let currentEventIdx = 0;
+
+async function loadLevel() {
+  try {
+    currentLevel = await (await fetch("./levels/barracuda.json")).json();
+    currentEventIdx = 0;
+  } catch (err) {
+    console.error("Load level fail: ", err);
+  }
+}
+
 // 2. GAME INIT
 
-function init() {
+async function init() {
   //Init Canvas
   gameCanvas.canvas = document.getElementById("canvas");
   gameCanvas.ctx = gameCanvas.canvas.getContext("2d");
@@ -119,12 +130,8 @@ function init() {
   player.x = (gameCanvas.canvas.width - player.width) / 2;
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
-  //Init obstacles
-  const enemy1 = new Obstacle(100, -100, 50, 100, 200, "#ef4565", "falling");
-  const enemy2 = new Obstacle(-90, 100, 90, 40, 300, "#ef4565", "passing");
-  const enemy3 = new Obstacle(600, -200, 40, 200, 350, "#ef4565", "falling");
-
-  obstacles = [enemy1, enemy2, enemy3];
+  //Load level
+  await loadLevel();
 
   //Set key control
   document.addEventListener("keydown", handleKeyDown);
@@ -179,20 +186,14 @@ function resetGame() {
   player.x = (gameCanvas.canvas.width - player.width) / 2;
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
-  //Init obstacles
-  const enemy1 = new Obstacle(100, -100, 50, 100, 200, "#ef4565", "falling");
-  const enemy2 = new Obstacle(-90, 100, 90, 40, 100, "#ef4565", "passing");
-  const enemy3 = new Obstacle(600, -200, 40, 200, 250, "#ef4565", "falling");
-
-  obstacles = [enemy1, enemy2, enemy3];
+  //Reset obstacles
+  obstacles = [];
 
   //Reset movement
   movement.left = movement.right = movement.up = movement.down = false;
 
-  //Reset spawnTimer
-  spawnTimer = 0;
-
   //Reset audio
+  currentEventIdx = 0;
   audio.currentTime = 0;
   audio.play();
 }
@@ -242,31 +243,36 @@ function draw() {
 
 // 5. UPDATE
 
-//Spawn obstacle funciton after ${spawnInterval} seconds
+// PROCESS EVENT OBSTACLE SPAWN
 
-function spawnObstacle(spawnInterval, dt) {
-  const { canvas } = gameCanvas;
-  spawnTimer += dt;
-  if (spawnTimer >= spawnInterval) {
-    spawnTimer = 0;
-    const randomeType = Math.random() >= 0.5 ? "falling" : "passing";
-    console.log(audio.currentTime);
-
-    if (randomeType === "falling") {
-      const x = Math.random() * (canvas.width - 50);
-      obstacles.push(new Obstacle(x, -70, 50, 70, 300, "#ef4565", "falling"));
-    } else if (randomeType === "passing") {
-      const y = Math.random() * (canvas.height - 170);
-      obstacles.push(new Obstacle(-50, y, 50, 170, 250, "#ef4565", "passing"));
-    }
-  }
+function handleEvent(event) {
+  const obstacle = new Obstacle(
+    event.x,
+    event.y,
+    event.width,
+    event.height,
+    event.speed,
+    event.color,
+    event.type,
+  );
+  console.log(audio.currentTime);
+  obstacles.push(obstacle);
 }
 
 function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
   player.update(dt);
 
-  spawnObstacle(2, dt);
+  //Add obstacle from event
+  while (
+    currentLevel &&
+    currentEventIdx < currentLevel.events.length &&
+    audio.currentTime >= currentLevel.events[currentEventIdx].time
+  ) {
+    const eventInfo = currentLevel.events[currentEventIdx];
+    handleEvent(eventInfo);
+    currentEventIdx++;
+  }
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].update(dt);
