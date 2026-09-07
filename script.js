@@ -1,4 +1,8 @@
 // 1. STATE GAME
+
+// AUDIO
+const audio = new Audio("./audio/Barracuda.mp3");
+
 const STATE = {
   MENU: "MENU",
   PAUSE: "PAUSE",
@@ -151,13 +155,16 @@ function handleStateKey(event) {
     if (state === STATE.PAUSE) {
       event.preventDefault();
       gameCanvas.state = STATE.PLAYING;
+      audio.play();
     } else if (state === STATE.GAME_OVER || state === STATE.MENU) {
       event.preventDefault();
       resetGame();
       gameCanvas.state = STATE.PLAYING;
     }
-  } else if (event.key === "Escape" && state === STATE.PLAYING)
+  } else if (event.key === "Escape" && state === STATE.PLAYING) {
     gameCanvas.state = STATE.PAUSE;
+    audio.pause();
+  }
 }
 
 function handleKeyUp(event) {
@@ -184,6 +191,10 @@ function resetGame() {
 
   //Reset spawnTimer
   spawnTimer = 0;
+
+  //Reset audio
+  audio.currentTime = 0;
+  audio.play();
 }
 
 //4. DRAW
@@ -239,6 +250,7 @@ function spawnObstacle(spawnInterval, dt) {
   if (spawnTimer >= spawnInterval) {
     spawnTimer = 0;
     const randomeType = Math.random() >= 0.5 ? "falling" : "passing";
+    console.log(audio.currentTime);
 
     if (randomeType === "falling") {
       const x = Math.random() * (canvas.width - 50);
@@ -254,7 +266,7 @@ function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
   player.update(dt);
 
-  spawnObstacle(0.1, dt);
+  spawnObstacle(2, dt);
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].update(dt);
@@ -271,7 +283,10 @@ function update(dt) {
 // 6. Check collision
 
 function checkCollision(player, enemy) {
-  if (checkAABBCollision(player, enemy)) gameCanvas.state = STATE.GAME_OVER;
+  if (checkAABBCollision(player, enemy)) {
+    gameCanvas.state = STATE.GAME_OVER;
+    audio.pause();
+  }
 }
 
 //Check AABB Collision condition
