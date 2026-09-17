@@ -1,10 +1,10 @@
 {
   "song": "./audio/Barracuda.mp3",
   "bpm": 130,
-  "offset": 0.5,
+  "offset": 0.546,
   "events": [
     {
-      "time": 1.0,
+      "beat": 0,
       "type": "falling",
       "x": 100,
       "y": -100,
@@ -14,7 +14,7 @@
       "color": "#ef4565"
     },
     {
-      "time": 2.0,
+      "beat": 4,
       "type": "passing",
       "x": -90,
       "y": 100,
@@ -24,7 +24,7 @@
       "color": "#ef4565"
     },
     {
-      "time": 3.0,
+      "beat": 7.5,
       "type": "falling",
       "x": 300,
       "y": -150,
@@ -34,7 +34,7 @@
       "color": "#ef4565"
     },
     {
-      "time": 4.0,
+      "beat": 12,
       "type": "passing",
       "x": -100,
       "y": 300,
@@ -44,7 +44,7 @@
       "color": "#ef4565"
     },
     {
-      "time": 5.0,
+      "beat": 15.5,
       "type": "falling",
       "x": 600,
       "y": -200,

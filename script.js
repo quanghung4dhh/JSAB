@@ -1,49 +1,4 @@
-// 1. STATE GAME
-
-// AUDIO
-const audio = new Audio("./audio/Barracuda.mp3");
-
-const STATE = {
-  MENU: "MENU",
-  PAUSE: "PAUSE",
-  PLAYING: "PLAYING",
-  GAME_OVER: "GAME OVER",
-};
-
-// GAME STATE
-const gameCanvas = {
-  canvas: null,
-  ctx: null,
-  lastTime: 0,
-  state: STATE.MENU,
-};
-
-// MOVEMENT
-const movement = {
-  up: false,
-  down: false,
-  right: false,
-  left: false,
-};
-
-// KEY CONTROL
-const KEY = {
-  W: "up",
-  w: "up",
-  ArrowUp: "up",
-  S: "down",
-  s: "down",
-  ArrowDown: "down",
-  A: "left",
-  a: "left",
-  ArrowLeft: "left",
-  D: "right",
-  d: "right",
-  ArrowRight: "right",
-};
-
-let obstacles = []; //Obstacle array
-
+// 0. CLASS
 // 1.1 OBSTACLE CLASS
 
 class Obstacle {
@@ -104,16 +59,66 @@ class Player {
   }
 }
 
-let player = new Player(0, 0, 20, 20, 400, "#3da9fc");
+// 1. STATE GAME
+
+// AUDIO
+const audio = new Audio("./audio/Barracuda.mp3");
+
+const STATE = {
+  MENU: "MENU",
+  PAUSE: "PAUSE",
+  PLAYING: "PLAYING",
+  GAME_OVER: "GAME OVER",
+};
+
+// GAME STATE
+const gameCanvas = {
+  canvas: null,
+  ctx: null,
+  lastTime: 0,
+  state: STATE.MENU,
+};
+
+// MOVEMENT
+const movement = {
+  up: false,
+  down: false,
+  right: false,
+  left: false,
+};
+
+// KEY CONTROL
+const KEY = {
+  W: "up",
+  w: "up",
+  ArrowUp: "up",
+  S: "down",
+  s: "down",
+  ArrowDown: "down",
+  A: "left",
+  a: "left",
+  ArrowLeft: "left",
+  D: "right",
+  d: "right",
+  ArrowRight: "right",
+};
+
+let obstacles = []; //Obstacle array
+
+let player = new Player(0, 0, 20, 20, 400, "#3da9fc"); // init player object
 
 // LOAD LEVEL
 let currentLevel = null;
 let currentEventIdx = 0;
+let offset = 0;
+let BPM = 0;
 
 async function loadLevel() {
   try {
     currentLevel = await (await fetch("./levels/barracuda.json")).json();
     currentEventIdx = 0;
+    offset = currentLevel.offset;
+    BPM = currentLevel.bpm;
   } catch (err) {
     console.error("Load level fail: ", err);
   }
@@ -167,6 +172,7 @@ function handleStateKey(event) {
       event.preventDefault();
       resetGame();
       gameCanvas.state = STATE.PLAYING;
+      audio.play();
     }
   } else if (event.key === "Escape" && state === STATE.PLAYING) {
     gameCanvas.state = STATE.PAUSE;
@@ -195,7 +201,6 @@ function resetGame() {
   //Reset audio
   currentEventIdx = 0;
   audio.currentTime = 0;
-  audio.play();
 }
 
 //4. DRAW
@@ -267,7 +272,8 @@ function update(dt) {
   while (
     currentLevel &&
     currentEventIdx < currentLevel.events.length &&
-    audio.currentTime >= currentLevel.events[currentEventIdx].time
+    audio.currentTime >=
+      (currentLevel.events[currentEventIdx].beat * 60) / BPM + offset
   ) {
     const eventInfo = currentLevel.events[currentEventIdx];
     handleEvent(eventInfo);
@@ -310,9 +316,7 @@ function checkAABBCollision(A, B) {
     B.y + B.height,
   ];
 
-  if (leftA < rightB && rightA > leftB && topA < bottomB && bottomA > topB)
-    return true;
-  return false;
+  return leftA < rightB && rightA > leftB && topA < bottomB && bottomA > topB;
 }
 
 // 7. GameLoop
