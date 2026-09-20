@@ -87,18 +87,7 @@ class LevelSystem {
           this.offset
     ) {
       const eventInfo = this.currentLevel.events[this.currentEventIdx];
-      const obstacle = new Obstacle(
-        eventInfo.x,
-        eventInfo.y,
-        eventInfo.width,
-        eventInfo.height,
-        eventInfo.speed,
-        eventInfo.color,
-        eventInfo.type,
-      );
-
-      spawned.push(obstacle);
-
+      spawned.push(eventInfo);
       this.currentEventIdx++;
     }
     return spawned;
@@ -154,10 +143,13 @@ const KEY = {
 
 let obstacles = []; //Obstacle array
 
-let player = new Player(0, 0, 20, 20, 400, "#3da9fc"); // init player object
+const player = new Player(0, 0, 20, 20, 400, "#3da9fc"); // init player object
 
 // LOAD LEVEL
 const levelSystem = new LevelSystem("./levels/barracuda.json");
+
+// Screen shaking
+const screenShake = { intensity: 0, duration: 0 };
 
 // 2. GAME INIT
 
@@ -266,8 +258,27 @@ function drawUI() {
   }
 }
 
-function draw() {
+// Screen Shaking function
+
+function screenShaking(dt) {
+  const { ctx } = gameCanvas;
+
+  ctx.save();
+  if (screenShake.duration <= 0) return;
+
+  const dx = (Math.random() - 0.5) * 2 * screenShake.intensity;
+  const dy = (Math.random() - 0.5) * 2 * screenShake.intensity;
+  ctx.translate(dx, dy);
+  screenShake.duration -= dt;
+  screenShake.intensity *= 0.9;
+}
+
+function draw(dt) {
   const { ctx, canvas } = gameCanvas;
+
+  // Screen Shaking
+
+  screenShaking(dt);
 
   //Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -280,21 +291,45 @@ function draw() {
   if (gameCanvas.state !== STATE.PLAYING) {
     drawUI();
   }
+
+  ctx.restore();
 }
 
 // 5. UPDATE
+
+//Handle spawn array from Level System
+function handleSpawn() {
+  //Obtain new Events from Level System
+  const newEvents = levelSystem.processEvents();
+
+  // Process each event
+  newEvents.forEach((event) => {
+    if (event.category === "obstacle") {
+      obstacles.push(
+        new Obstacle(
+          event.x,
+          event.y,
+          event.width,
+          event.height,
+          event.speed,
+          event.color,
+          event.type,
+        ),
+      );
+    } else if (event.category === "shaking") {
+      screenShake.intensity = event.intensity;
+      screenShake.duration = event.duration;
+    }
+  });
+  console.log(obstacles);
+  console.log(screenShake);
+}
 
 function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
   player.update(dt);
 
-  //Obtain newObstacles from Level System
-  const newObstacles = levelSystem.processEvents();
-
-  // Push them back to global obstacle array
-  newObstacles.forEach((event) => {
-    obstacles.push(event);
-  });
+  handleSpawn();
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].update(dt);
@@ -348,7 +383,7 @@ function gameLoop(timeStamp) {
   update(dt);
 
   //Draw
-  draw();
+  draw(dt);
 
   //Loop
   requestAnimationFrame(gameLoop);
