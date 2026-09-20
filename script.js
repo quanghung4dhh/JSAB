@@ -59,10 +59,59 @@ class Player {
   }
 }
 
-// 1. STATE GAME
+//Level System Class
+class LevelSystem {
+  constructor(filePath) {
+    this.filePath = filePath;
+  }
 
-// AUDIO
-const audio = new Audio("./audio/Barracuda.mp3");
+  //Load level Json from json file
+  async loadLevel() {
+    this.currentLevel = await (await fetch(this.filePath)).json();
+    this.currentEventIdx = 0;
+    this.bpm = this.currentLevel.bpm;
+    this.offset = this.currentLevel.offset;
+    this.events = this.currentLevel.events;
+    this.audio = new Audio(this.currentLevel.song);
+  }
+
+  //Using While loop to load Event
+  processEvents() {
+    const spawned = [];
+    //Add obstacle from event
+    while (
+      this.currentLevel &&
+      this.currentEventIdx < this.currentLevel.events.length &&
+      this.audio.currentTime >=
+        (this.currentLevel.events[this.currentEventIdx].beat * 60) / this.bpm +
+          this.offset
+    ) {
+      const eventInfo = this.currentLevel.events[this.currentEventIdx];
+      const obstacle = new Obstacle(
+        eventInfo.x,
+        eventInfo.y,
+        eventInfo.width,
+        eventInfo.height,
+        eventInfo.speed,
+        eventInfo.color,
+        eventInfo.type,
+      );
+
+      spawned.push(obstacle);
+
+      this.currentEventIdx++;
+    }
+    return spawned;
+  }
+
+  //Reset audio
+  reset() {
+    this.currentEventIdx = 0;
+    this.audio.currentTime = 0;
+  }
+}
+
+// 1. STATE GAME
 
 const STATE = {
   MENU: "MENU",
@@ -108,21 +157,7 @@ let obstacles = []; //Obstacle array
 let player = new Player(0, 0, 20, 20, 400, "#3da9fc"); // init player object
 
 // LOAD LEVEL
-let currentLevel = null;
-let currentEventIdx = 0;
-let offset = 0;
-let BPM = 0;
-
-async function loadLevel() {
-  try {
-    currentLevel = await (await fetch("./levels/barracuda.json")).json();
-    currentEventIdx = 0;
-    offset = currentLevel.offset;
-    BPM = currentLevel.bpm;
-  } catch (err) {
-    console.error("Load level fail: ", err);
-  }
-}
+const levelSystem = new LevelSystem("./levels/barracuda.json");
 
 // 2. GAME INIT
 
@@ -136,7 +171,7 @@ async function init() {
   player.y = (gameCanvas.canvas.height - player.height) / 2;
 
   //Load level
-  await loadLevel();
+  await levelSystem.loadLevel();
 
   //Set key control
   document.addEventListener("keydown", handleKeyDown);
@@ -163,6 +198,8 @@ function handleKeyDown(event) {
 
 function handleStateKey(event) {
   let { state } = gameCanvas;
+  let audio = levelSystem.audio;
+
   if (event.key === "Enter" || event.key === " ") {
     if (state === STATE.PAUSE) {
       event.preventDefault();
@@ -199,8 +236,7 @@ function resetGame() {
   movement.left = movement.right = movement.up = movement.down = false;
 
   //Reset audio
-  currentEventIdx = 0;
-  audio.currentTime = 0;
+  levelSystem.reset();
 }
 
 //4. DRAW
@@ -248,37 +284,17 @@ function draw() {
 
 // 5. UPDATE
 
-// PROCESS EVENT OBSTACLE SPAWN
-
-function handleEvent(event) {
-  const obstacle = new Obstacle(
-    event.x,
-    event.y,
-    event.width,
-    event.height,
-    event.speed,
-    event.color,
-    event.type,
-  );
-  console.log(audio.currentTime);
-  obstacles.push(obstacle);
-}
-
 function update(dt) {
   if (gameCanvas.state !== STATE.PLAYING) return;
   player.update(dt);
 
-  //Add obstacle from event
-  while (
-    currentLevel &&
-    currentEventIdx < currentLevel.events.length &&
-    audio.currentTime >=
-      (currentLevel.events[currentEventIdx].beat * 60) / BPM + offset
-  ) {
-    const eventInfo = currentLevel.events[currentEventIdx];
-    handleEvent(eventInfo);
-    currentEventIdx++;
-  }
+  //Obtain newObstacles from Level System
+  const newObstacles = levelSystem.processEvents();
+
+  // Push them back to global obstacle array
+  newObstacles.forEach((event) => {
+    obstacles.push(event);
+  });
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].update(dt);
@@ -297,7 +313,7 @@ function update(dt) {
 function checkCollision(player, enemy) {
   if (checkAABBCollision(player, enemy)) {
     gameCanvas.state = STATE.GAME_OVER;
-    audio.pause();
+    levelSystem.audio.pause();
   }
 }
 
@@ -337,4 +353,5 @@ function gameLoop(timeStamp) {
   //Loop
   requestAnimationFrame(gameLoop);
 }
+
 init();
