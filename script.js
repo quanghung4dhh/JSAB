@@ -1,5 +1,5 @@
 // 0. CLASS
-// 1.1 OBSTACLE CLASS
+// 0.1 OBSTACLE CLASS
 
 class Obstacle {
   constructor(x, y, width, height, speed, color, type) {
@@ -27,7 +27,7 @@ class Obstacle {
   }
 }
 
-// 1.2 PLAYER CLASS
+// 0.2 PLAYER CLASS
 class Player {
   constructor(x, y, width, height, speed, color) {
     this.x = x;
@@ -36,12 +36,62 @@ class Player {
     this.height = height;
     this.speed = speed;
     this.color = color;
+    this.direction = "left";
+    this.dashSpeed = 2000; //pixel/s
+    this.invincible = false;
   }
   update(dt) {
-    if (movement.left) this.x -= this.speed * dt;
-    if (movement.right) this.x += this.speed * dt;
-    if (movement.up) this.y -= this.speed * dt;
-    if (movement.down) this.y += this.speed * dt;
+    this.invincible = false;
+
+    //Handle dash cooldown
+    if (DASH.dashCD >= 0) DASH.dashCD = Math.max(0, DASH.dashCD - dt);
+
+    //Handle Dash movement
+    if (DASH.dash) {
+      this.invincible = true;
+      switch (this.direction) {
+        case "left": {
+          this.x -= this.dashSpeed * dt;
+          break;
+        }
+        case "right": {
+          this.x += this.dashSpeed * dt;
+          break;
+        }
+        case "down": {
+          this.y += this.dashSpeed * dt;
+          break;
+        }
+        case "up": {
+          this.y -= this.dashSpeed * dt;
+          break;
+        }
+      }
+      // DASH.dash = false
+      if (DASH.dashTime >= 0) DASH.dashTime = Math.max(0, DASH.dashTime - dt);
+
+      if (DASH.dashTime <= 0) DASH.dash = false;
+    }
+
+    if (movement.left) {
+      this.x -= this.speed * dt;
+      this.direction = "left";
+    }
+
+    if (movement.right) {
+      this.x += this.speed * dt;
+      this.direction = "right";
+    }
+
+    if (movement.up) {
+      this.y -= this.speed * dt;
+      this.direction = "up";
+    }
+
+    if (movement.down) {
+      this.y += this.speed * dt;
+      this.direction = "down";
+    }
 
     //Limit the player position
     this.x = Math.max(
@@ -59,7 +109,48 @@ class Player {
   }
 }
 
-//Level System Class
+// 0.3 Player particle class
+class PlayerParticle {
+  constructor(x, y, vx, vy, life, maxDuration, size, color) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.life = life;
+    this.maxDuration = maxDuration;
+    this.size = size;
+    this.color = color;
+    this.active = true;
+  }
+
+  update(dt) {
+    if (life <= 0) {
+      this.active = false;
+      return;
+    }
+
+    x += vx * dt;
+    y += vy * dt;
+    life -= dt;
+  }
+
+  draw() {
+    const { ctx } = gameCanvas;
+
+    //Calculate the opacity of the paricle
+    const opacity = this.life / this.maxDuration;
+    ctx.globalAlpha = opacity;
+
+    //Draw the particle
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.size, this.size);
+
+    //Reset the opacity of the context
+    ctx.globalAlpha = 1;
+  }
+}
+
+// 0.4 Level System Class
 class LevelSystem {
   constructor(filePath) {
     this.filePath = filePath;
@@ -125,6 +216,14 @@ const movement = {
   left: false,
 };
 
+//Dash management
+const DASH = {
+  dash: false,
+  dashCD: 0.2,
+  dashTime: 0,
+  dashMaxTime: 0.1,
+};
+
 // KEY CONTROL
 const KEY = {
   W: "up",
@@ -142,6 +241,8 @@ const KEY = {
 };
 
 let obstacles = []; //Obstacle array
+
+let playerParticles = []; //PLayer particle array
 
 const player = new Player(0, 0, 20, 20, 400, "#3da9fc"); // init player object
 
@@ -177,6 +278,7 @@ async function init() {
 }
 
 // 3. HANDLE KEY FUNCTION
+
 function handleKeyDown(event) {
   //Handle Movement
   if (gameCanvas.state === STATE.PLAYING) {
@@ -186,6 +288,9 @@ function handleKeyDown(event) {
 
   //Handle changing state game
   handleStateKey(event);
+
+  //Handle Key Dash
+  handleKeyDash(event);
 }
 
 function handleStateKey(event) {
@@ -209,10 +314,26 @@ function handleStateKey(event) {
   }
 }
 
+function handleKeyDash(event) {
+  if (
+    gameCanvas.state === STATE.PLAYING &&
+    event.key === " " &&
+    !event.repeat &&
+    DASH.dashCD <= 0
+  ) {
+    DASH.dash = true;
+    DASH.dashCD = 0.2;
+    DASH.dashTime = DASH.dashMaxTime;
+  }
+}
+
 function handleKeyUp(event) {
   //Handle Movement
   const key = KEY[event.key];
   if (key) movement[key] = false;
+
+  //Handle Dash
+  if (event.key === " ") DASH.dash = false;
 }
 
 //3. RESET GAME
@@ -321,8 +442,6 @@ function handleSpawn() {
       screenShake.duration = event.duration;
     }
   });
-  console.log(obstacles);
-  console.log(screenShake);
 }
 
 function update(dt) {
@@ -346,6 +465,7 @@ function update(dt) {
 // 6. Check collision
 
 function checkCollision(player, enemy) {
+  if (player.invincible) return;
   if (checkAABBCollision(player, enemy)) {
     gameCanvas.state = STATE.GAME_OVER;
     levelSystem.audio.pause();
